@@ -192,6 +192,11 @@ document.addEventListener('keydown',e=>{
 });
 let vehCam='fpp';
 document.addEventListener('keydown',e=>{ if(e.code==='KeyV' && inVehicle){ vehCam=vehCam==='fpp'?'tpp':'fpp'; showMsg(vehCam==='fpp'?'🎥 Kabina ichidan':'🎥 Orqadan',700); } });
+// ko'prik ustida g'ildiraklar panjara tashqarisidagi suvni emas, ko'prik sathini "his qiladi"
+function carGroundY(x,z){
+  const y=terrainY(x,z), br=bridgeAt(x,z);
+  return (br && Math.abs(br.al)<br.b.half) ? Math.max(y,br.b.deckY) : y;
+}
 function updateVehicle(dt){
   if(!inVehicle){
     promptVeh='';
@@ -243,16 +248,21 @@ function updateVehicle(dt){
   }
   // ko'prik panjarasi — chetga chiqib ketmaslik
   const br=bridgeAt(vp.x,vp.z);
-  if(br && Math.abs(br.ac)>3.3 && Math.abs(br.al)<br.b.half){ const push=(Math.abs(br.ac)-3.3)*Math.sign(br.ac); vp.x-=Math.cos(br.b.ang)*push; vp.z+=Math.sin(br.b.ang)*push; v.speed*=0.97; }
+  if(br && Math.abs(br.ac)>3.3 && Math.abs(br.al)<br.b.half){
+    const push=(Math.abs(br.ac)-3.3)*Math.sign(br.ac); vp.x-=Math.cos(br.b.ang)*push; vp.z+=Math.sin(br.b.ang)*push; v.speed*=0.97;
+    // panjaraga tegsa mashina ko'prik yo'nalishiga suriladi (sirpanib boradi)
+    let dy=br.b.ang+(Math.cos(v.vyaw-br.b.ang)<0?Math.PI:0)-v.vyaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+    v.vyaw+=dy*Math.min(1,dt*3); v.slip*=0.5;
+  }
   // yo'lovchilarni urib ketish
   if(Math.abs(sp)>7){ for(const b of bots){ if(!b.alive||b.inVeh||b.air||b.isMate) continue; const p=b.mesh.position; if(Math.abs(p.y-vp.y)<2 && Math.hypot(p.x-(vp.x+fx*1.6),p.z-(vp.z+fz*1.6))<1.8){ damageBot(b,Math.abs(sp)*5,'Siz',0,{x:vp.x,y:vp.y,z:vp.z}); b.mesh.position.x+=mvx*0.08; b.mesh.position.z+=mvz*0.08; v.speed*=0.8; } } }
   // osma (suspension), sakrash, havoda uchish
   if(def.water){ vp.y=Math.sin(performance.now()*0.002)*0.08; v.pitch=Math.sin(performance.now()*0.0015)*0.03-Math.min(0.08,Math.abs(sp)*0.003); v.roll=-v.steer*Math.min(1,Math.abs(sp)/10)*0.12; }
   else {
     const hx=L*0.9, hw=Wd;
-    const yF=terrainY(vp.x+fx*hx,vp.z+fz*hx), yB=terrainY(vp.x-fx*hx,vp.z-fz*hx), yL=terrainY(vp.x-rx*hw,vp.z-rz*hw), yR=terrainY(vp.x+rx*hw,vp.z+rz*hw);
-    const gyc=Math.max((yF+yB)/2,(yL+yR)/2,terrainY(vp.x,vp.z)-0.15);
-    const tp=Math.atan2(yF-yB,2*hx), tr=Math.atan2(yL-yR,2*hw)*0.8;
+    const yF=carGroundY(vp.x+fx*hx,vp.z+fz*hx), yB=carGroundY(vp.x-fx*hx,vp.z-fz*hx), yL=carGroundY(vp.x-rx*hw,vp.z-rz*hw), yR=carGroundY(vp.x+rx*hw,vp.z+rz*hw);
+    const gyc=Math.max((yF+yB)/2,(yL+yR)/2,carGroundY(vp.x,vp.z)-0.15);
+    const tp=Math.max(-0.5,Math.min(0.5,Math.atan2(yF-yB,2*hx))), tr=Math.max(-0.4,Math.min(0.4,Math.atan2(yL-yR,2*hw)*0.8));
     if(v.air){ v.vy-=18*dt; vp.y+=v.vy*dt; if(vp.y<=gyc){ vp.y=gyc; if(v.vy<-9) camShake=Math.min(0.6,-v.vy*0.03); v.vy=0; v.air=false; } v.pitch+=(-0.08-v.pitch)*dt*0.8; }
     else {
       const dropOff=vp.y-gyc;

@@ -85,6 +85,16 @@ function makeRoad(a,b){
     roads.push(makeRoad(towns[best.u],towns[best.v])); used.push(best.v); rest.splice(rest.indexOf(best.v),1);
   }
   for(let k=0;k<3 && towns.length>3;k++){ const a=pick(towns), b=pick(towns); if(a!==b) roads.push(makeRoad(a,b)); }
+  // har bir xaritada kamida bitta ko'prik bo'lsin: hech bir yo'l daryodan o'tmasa, daryo ortidagi eng yaqin shaharlarni ulaymiz
+  const crosses=pts=>pts.some(p=>riverDistAt(p.x,p.z)<8);
+  if(roads.some(crosses)) return;
+  let best=null;
+  for(let i=0;i<towns.length;i++) for(let j=i+1;j<towns.length;j++){
+    const a=towns[i], b=towns[j], d=Math.hypot(a.x-b.x,a.z-b.z); if(d>520 || (best && d>=best.d)) continue;
+    let minR=1e9; for(let k=1;k<40;k++){ const t=k/40; minR=Math.min(minR,riverDistAt(a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t)); }
+    if(minR<6) best={a,b,d};
+  }
+  if(best){ for(let k=0;k<6;k++){ const r=makeRoad(best.a,best.b); if(crosses(r) || k===5){ roads.push(r); break; } } }
 })();
 
 // --- balandliklar xaritasi

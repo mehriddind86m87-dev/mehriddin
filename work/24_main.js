@@ -80,7 +80,7 @@ if(location.hash==='#debug') window.__dbg={
   look:(y,p)=>{ yaw=y; pitch=p; },
   car:()=>{ let best=null,bd=1e9; for(const v of vehicles){ if(v.def.water) continue; const d=Math.hypot(v.mesh.position.x-player.position.x,v.mesh.position.z-player.position.z); if(d<bd){bd=d;best=v;} } if(best){ player.position.copy(best.mesh.position); enterVehicle(best);} return best&&best.type; },
   carTo:(x,z,a)=>{ const v=activeVehicle; if(!v) return; v.mesh.position.set(x,terrainY(x,z),z); v.vyaw=a; yaw=a; v.speed=0; },
-  veh:()=>{ const v=activeVehicle; return v?{x:v.mesh.position.x,y:v.mesh.position.y,z:v.mesh.position.z,speed:v.speed,air:v.air}:null; },
+  veh:()=>{ const v=activeVehicle; return v?{x:v.mesh.position.x,y:v.mesh.position.y,z:v.mesh.position.z,speed:v.speed,air:v.air,pitch:v.pitch,roll:v.roll,yaw:v.vyaw}:null; },
   knockMate:()=>{ const m=bots.find(b=>b.isMate&&b.alive&&!b.down); if(m){ m.mesh.position.set(player.position.x+1.5,player.position.y,player.position.z); knockBot(m,'test'); } return m&&m.name; },
   killEnemy:()=>{ const e=bots.find(b=>!b.isMate&&b.alive&&!b.air); if(e){ e.mesh.position.set(player.position.x+4,groundAt(player.position.x+4,player.position.z),player.position.z); killBotFinal(e,'Siz',0); } return e&&e.name; },
   env:()=>ENV,
